@@ -10,17 +10,12 @@ from tensorflow.keras.layers import Dropout, Dense
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.metrics import SparseCategoricalAccuracy
+import pickle
 
 model_name = "bert-base-cased"
 tokenizer = BertTokenizer.from_pretrained(model_name)
 
 SNIPS_DATA_BASE_URL = ("https://github.com/ogrisel/slot_filling_and_intent_detection_of_SLU/blob/master/data/snips/")
-
-for filename in ["train", "valid", "test", "vocab.intent", "vocab.slot"]:
-    path = Path(filename)
-    if not path.exists():
-        print(f"Downloading {filename}...")
-        urlretrieve(SNIPS_DATA_BASE_URL + filename + "?raw=true", path)
 
 def parse_line(line):
     data, intent_label = line.split(" <=> ")
@@ -33,6 +28,12 @@ def parse_line(line):
         "word_labels": " ".join(word_labels),
         "length": len(words),
     }
+
+for filename in ["train", "valid", "test", "vocab.intent", "vocab.slot"]:
+    path = Path(filename)
+    if not path.exists():
+        print(f"Downloading {filename}...")
+        urlretrieve(SNIPS_DATA_BASE_URL + filename + "?raw=true", path)
 
 def encode_dataset(text_sequences):
     # Make all tokens 0 (corresponds to [PAD] token) and then encode according to length of sequence
@@ -126,62 +127,7 @@ joint_model = JointIntentAndSlotFillingModel(len(intent_map), len(slot_map))
 losses = [SparseCategoricalCrossentropy(from_logits=True), SparseCategoricalCrossentropy(from_logits=True)]
 joint_model.compile(optimizer=Adam(learning_rate=3e-5, epsilon=1e-08), loss=losses, metrics=[SparseCategoricalAccuracy('accuracy')])
 
-history = joint_model.fit(encoded_train, (slot_train, intent_train),  validation_data=(encoded_valid, (slot_valid, intent_valid)), epochs=1, batch_size=32)
-    
-def show_predictions(text, intent_names, slot_names):
-    inputs = tf.constant(tokenizer.encode(text))[None, :]  # batch_size = 1
-    outputs = joint_model(inputs)
-    slot_logits, intent_logits = outputs
-    slot_ids = slot_logits.numpy().argmax(axis=-1)[0, 1:-1]
-    intent_id = intent_logits.numpy().argmax(axis=-1)[0]
-    print("## Intent:", intent_names[intent_id])
-    print("## Slots:")
-    for token, slot_id in zip(tokenizer.tokenize(text), slot_ids):
-        print(f"{token:>10} : {slot_names[slot_id]}")
-        
-def decode_predictions(text, intent_names, slot_names, intent_id, slot_ids):
-    info = {"intent": intent_names[intent_id]}
-    collected_slots = {}
-    active_slot_words = []
-    active_slot_name = None
-    for word in text.split():
-        tokens = tokenizer.tokenize(word)
-        current_word_slot_ids = slot_ids[:len(tokens)]
-        slot_ids = slot_ids[len(tokens):]
-        current_word_slot_name = slot_names[current_word_slot_ids[0]]
-        if current_word_slot_name == "O":
-            if active_slot_name:
-                collected_slots[active_slot_name] = " ".join(active_slot_words)
-                active_slot_words = []
-                active_slot_name = None
-        else:
-            # Naive BIO: handling: treat B- and I- the same...
-            new_slot_name = current_word_slot_name[2:]
-            if active_slot_name is None:
-                active_slot_words.append(word)
-                active_slot_name = new_slot_name
-            elif new_slot_name == active_slot_name:
-                active_slot_words.append(word)
-            else:
-                collected_slots[active_slot_name] = " ".join(active_slot_words)
-                active_slot_words = [word]
-                active_slot_name = new_slot_name
-    if active_slot_name:
-        collected_slots[active_slot_name] = " ".join(active_slot_words)
-    info["slots"] = collected_slots
-    return info
- 
-def nlu(text, intent_names, slot_names):
-    inputs = tf.constant(tokenizer.encode(text))[None, :]  # batch_size = 1
-    outputs = joint_model(inputs)
-    slot_logits, intent_logits = outputs
-    slot_ids = slot_logits.numpy().argmax(axis=-1)[0, 1:-1]
-    intent_id = intent_logits.numpy().argmax(axis=-1)[0]
-    return decode_predictions(text, intent_names, slot_names, intent_id, slot_ids)
+joint_model.fit(encoded_train, (slot_train, intent_train),  validation_data=(encoded_valid, (slot_valid, intent_valid)), epochs=1, batch_size=32)
 
-user_continue = "Y"
-while (user_continue.upper() != "N"):
-    usr_input_str = input("Type in a command for Mini-Siri", intent_names, slot_names)
-    print(nlu(str, intent_names, slot_names))
-    user_continue = input("Do you want to continue asking to Mini-Siri?(Y/N)")
-print("Turned off Mini-Siri")
+with open('minisirimodel.pickle', 'wb') as m:
+  pickle.dump(m, joint_model)
