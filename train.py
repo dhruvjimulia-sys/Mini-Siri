@@ -130,4 +130,4 @@ joint_model.compile(optimizer=Adam(learning_rate=3e-5, epsilon=1e-08), loss=loss
 joint_model.fit(encoded_train, (slot_train, intent_train),  validation_data=(encoded_valid, (slot_valid, intent_valid)), epochs=1, batch_size=32)
 
 with open('minisirimodel.pickle', 'wb') as m:
-  pickle.dump(m, joint_model)
+  pickle.dump(joint_model, m)
