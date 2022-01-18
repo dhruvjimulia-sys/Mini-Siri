@@ -18,9 +18,9 @@ To run the Python script, execute the following command while in the project dir
 ```
 $ python3 main.py
 ```
-The Python script `main.py` finetunes a pretrained BERT transformer for classifying the intent of digital voice assistant commands into one of `AddToPlaylist`, `BookRestaurant`, `GetWeather`, `PlayMusic`, `RateBook`, `SearchCreativeWork`, and `SearchScreeningEvent`. The script also performs named entity recognition on the command to determine the nouns that are relevant to the classified intent.
+The Python script `main.py` finetunes a pretrained BERT transformer for classifying the intent of digital voice assistant commands into one of `AddToPlaylist`, `BookRestaurant`, `GetWeather`, `PlayMusic`, `RateBook`, `SearchCreativeWork`, or `SearchScreeningEvent`. The script also performs named entity recognition on the command to determine the nouns that are relevant to the classified intent.
 
-After finetuning, the user can input example voice assistant commands to test the finetuned model, as shown in the acreenshot below:
+After finetuning, the user can input example voice assistant commands to test the finetuned model, as shown in the screenshot below:
 
 ![image](https://user-images.githubusercontent.com/63531728/149874223-b78cf24f-50a7-4869-800c-4ae8c267404a.png)
 
