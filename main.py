@@ -17,13 +17,13 @@ tokenizer = BertTokenizer.from_pretrained(model_name)
 
 SNIPS_DATA_BASE_URL = ("https://github.com/ogrisel/slot_filling_and_intent_detection_of_SLU/blob/master/data/snips/")
 
-os.makedirs("dataset/")
-
-for filename in ["train", "valid", "test", "vocab.intent", "vocab.slot"]:
-    path = Path(f"dataset/{filename}")
-    if not path.exists():
-        print(f"Downloading {filename}...")
-        urlretrieve(SNIPS_DATA_BASE_URL + filename + "?raw=true", path)
+if not os.path.isdir("dataset/"):
+    os.makedirs("dataset/")
+    for filename in ["train", "valid", "test", "vocab.intent", "vocab.slot"]:
+        path = Path(f"dataset/{filename}")
+	if not path.exists():
+	    print(f"Downloading {filename}...")
+	    urlretrieve(SNIPS_DATA_BASE_URL + filename + "?raw=true", path)
 
 def parse_line(line):
     data, intent_label = line.split(" <=> ")
